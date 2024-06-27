@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Recommendation App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Roboto:wght@400;700&display=swap');
+        
+        body, html {
+            font-family: 'Roboto', sans-serif;
+            background-color: #ffd700;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .title-container {
+            width: 100%;
+            padding: 20px 0;
+        }
+        
+        h1 {
+            font-family: 'Caveat', cursive;
+            font-size: 6em;
+            color: white;
+            text-shadow: 4px 4px 0 black, -4px -4px 0 black, 4px -4px 0 black, -4px 4px 0 black;
+            margin: 0;
+            text-align: center;
+            animation: titlePop 1s ease-out;
+        }
+        
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
+        
+        .input-container {
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 20px;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        input[type="text"]::placeholder {
+            font-style: italic;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        button {
+            background-color: black;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        button:hover {
+            background-color: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .bookshelf {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .book-icon {
+            font-size: 2em;
+            margin: 0 10px;
+            color: black;
+            transition: transform 0.3s ease;
+        }
+        
+        #result-container {
+            width: 100%;
+            max-width: 800px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+        
+        .result-item {
+            background-color: white;
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        
+        @keyframes titlePop {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="title-container">
+        <h1>I Love Books</h1>
+    </div>
+    <div class="main-container">
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="Enter a book title" autocomplete="off">
+        </div>
+        <button onclick="getRecommendation()">Get Recommendation</button>
+        <div class="bookshelf">
+            <i class="fas fa-book book-icon"></i>
+            <i class="fas fa-book-open book-icon"></i>
+            <i class="fas fa-bookmark book-icon"></i>
+            <i class="fas fa-book-reader book-icon"></i>
+        </div>
+        <div id="result-container"></div>
+    </div>
+    
+    <script>
+        let resultCount = 0;
+
+        function getRecommendation() {
+            const userInput = document.getElementById('userInput').value;
+            const resultContainer = document.getElementById('result-container');
+            
+            // Animate the bookshelf icons first
+            animateBookshelf();
+            
+            // Delay the result display
+            setTimeout(() => {
+                fetch('/get_recommendation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'userInput=' + encodeURIComponent(userInput)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const newResult = document.createElement('div');
+                    newResult.className = 'result-item';
+                    newResult.innerHTML = `<strong>Recommendation ${++resultCount}:</strong><br>
+                                           Based on "${userInput}", we recommend: <br><br>
+                                           ${data.recommendations.map((book, index) => `${index + 1}. "${book}"`).join('<br>')}`;
+                    
+                    resultContainer.appendChild(newResult);
+                    
+                    // Trigger reflow
+                    newResult.offsetHeight;
+                    
+                    // Add visible class to fade in the new result
+                    newResult.style.opacity = '1';
+                    newResult.style.transform = 'translateY(0)';
+                    
+                    // Scroll to the new result
+                    newResult.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                })
+                .catch(error => console.error('Error:', error));
+            }, 500); // 500ms delay
+        }
+        
+        function animateBookshelf() {
+            const books = document.querySelectorAll('.book-icon');
+            books.forEach((book, index) => {
+                setTimeout(() => {
+                    book.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        book.style.transform = 'translateY(0)';
+                    }, 200);
+                }, index * 100);
+            });
+        }
+        
+        // Add event listener for 'Enter' key
+        document.getElementById('userInput').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                getRecommendation();
+            }
+        });
+    </script>
+</body>
+</html>
